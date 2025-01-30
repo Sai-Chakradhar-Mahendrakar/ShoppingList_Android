@@ -20,7 +20,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.Navigation
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
+import androidx.navigation.compose.rememberNavController
 import com.example.shoppinglist.ui.theme.ShoppingListTheme
 
 class MainActivity : ComponentActivity() {
@@ -33,7 +40,7 @@ class MainActivity : ComponentActivity() {
                     Column (
                         modifier = Modifier.padding(innerPadding)
                     ){
-                        ShoppingList()
+                        Navigation()
                     }
                 }
             }
@@ -41,9 +48,32 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun ShoppingListPreview(){
-    ShoppingList()
+fun Navigation(){
+    val navController = rememberNavController()
+    val viewModel: LocationViewModel = viewModel()
+    val context = LocalContext.current
+    val locationUtils = LocationUtils(context)
+
+    NavHost(navController, startDestination = "shoppingScreen"){
+        composable("shoppingScreen"){
+            ShoppingList(
+                locationUtils = locationUtils,
+                viewModel = viewModel,
+                navController = navController,
+                context = context,
+                address = viewModel.address.value.firstOrNull()?.formatted_address ?: "No Address"
+            )
+        }
+
+        dialog("locationScreen"){backStack->
+            viewModel.location.value?.let{it1->
+                LocationSelectionScreen(locationData = it1, onLocationSelected = {locationdata ->
+                    viewModel.fetchAddress("${locationdata.latitude}, ${locationdata.longitude}")
+                    navController.popBackStack()
+                })
+            }
+        }
+    }
 }
 
